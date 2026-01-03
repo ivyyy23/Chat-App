@@ -3,34 +3,41 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Client {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Scanner scan = new Scanner(System.in);
 
-        try (
-                Socket socket = new Socket("localhost", 4242);
-                PrintWriter pw = new PrintWriter(socket.getOutputStream());
-                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        ) {
+        Socket socket = new Socket("localhost", 4242);
+        PrintWriter pw = new PrintWriter(socket.getOutputStream());
+        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
+        String toSend;
+
+        new Thread (() -> {
             String message;
 
-            do {
-                System.out.println("Enter your message:");
-                message = scan.nextLine();
-                pw.println(message);
-            } while (!message.isEmpty());
+            try {
+                while ((message = br.readLine()) != null) {
+                    System.out.print("New message: ");
+                    System.out.println(message);
+                }
+            } catch (IOException e) {
+                System.out.println("Disconnected.");
+            }
+        }
+        ).start();
 
-            pw.flush();
+        System.out.println("Enter a message:");
 
-        } catch (UnknownHostException e) {
-            System.out.println("Host not found.");
-        } catch (IOException e) {
-            System.out.println("I/O Error:");
-            e.printStackTrace();
+        while (true) {
+            toSend = scan.nextLine();
+
+            if (!toSend.isBlank()) {
+                pw.println(toSend);
+                pw.flush();
+            }
         }
     }
 }
